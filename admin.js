@@ -7,6 +7,8 @@ let currentEditType = null; // 'portfolio' or 'testimonial'
 let currentImageBase64 = null;
 let portfolioItems = [];
 let testimonialItems = [];
+let isPrimaryAdmin = false;
+let adminUsers = [];
 
 // ===== AUTH =====
 function signInWithGoogle() {
@@ -25,19 +27,37 @@ auth.onAuthStateChanged(async (user) => {
         try {
             const adminDoc = await db.collection('settings').doc('admin').get();
             if (!adminDoc.exists) {
-                // First user — auto-register as admin
+                // First user — auto-register as primary admin
                 await db.collection('settings').doc('admin').set({
                     uid: user.uid,
                     email: user.email,
                     registrationLocked: true,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+                isPrimaryAdmin = true;
                 showDashboard(user);
-                showToast('Admin account created! You are now the administrator.', 'success');
+                showToast('Admin account created! You are the primary administrator.', 'success');
             } else if (adminDoc.data().uid === user.uid) {
+                // Primary admin
+                isPrimaryAdmin = true;
                 showDashboard(user);
             } else {
-                showAccessDenied();
+                // Check if granted admin
+                const grantedDoc = await db.collection('admins').doc(user.uid).get();
+                if (grantedDoc.exists) {
+                    isPrimaryAdmin = false;
+                    showDashboard(user);
+                } else {
+                    // Save as pending user so primary admin can see them
+                    await db.collection('pendingUsers').doc(user.uid).set({
+                        uid: user.uid,
+                        email: user.email,
+                        photoURL: user.photoURL || '',
+                        displayName: user.displayName || '',
+                        requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    showAccessDenied();
+                }
             }
         } catch (err) {
             showToast('Error checking admin access: ' + err.message, 'error');
@@ -67,8 +87,13 @@ function showDashboard(user) {
     if (emailEl) emailEl.textContent = user.email;
     if (avatarEl && user.photoURL) avatarEl.src = user.photoURL;
 
+    // Show/hide Users tab (only for primary admin)
+    const usersTab = document.querySelector('[data-tab="users"]');
+    if (usersTab) usersTab.style.display = isPrimaryAdmin ? '' : 'none';
+
     loadPortfolioItems();
     loadTestimonials();
+    if (isPrimaryAdmin) loadAdminUsers();
 }
 
 function showAccessDenied() {
@@ -86,6 +111,8 @@ function switchTab(tab) {
 
     document.getElementById('portfolioContent').style.display = tab === 'portfolio' ? 'block' : 'none';
     document.getElementById('testimonialsContent').style.display = tab === 'testimonials' ? 'block' : 'none';
+    const usersContent = document.getElementById('usersContent');
+    if (usersContent) usersContent.style.display = tab === 'users' ? 'block' : 'none';
 }
 
 // ===== PORTFOLIO CRUD =====
@@ -553,6 +580,141 @@ function initDragDrop() {
             handleImageUpload(input);
         }
     });
+}
+
+// ===== USER MANAGEMENT (Primary Admin Only) =====
+function loadAdminUsers() {
+    // Load granted admins
+    db.collection('admins').onSnapshot(snapshot => {
+        adminUsers = [];
+        snapshot.forEach(doc => adminUsers.push({ id: doc.id, ...doc.data() }));
+        renderUsersList();
+    });
+
+    // Load pending users
+    db.collection('pendingUsers').onSnapshot(snapshot => {
+        const pending = [];
+        snapshot.forEach(doc => pending.push({ id: doc.id, ...doc.data() }));
+        renderPendingUsers(pending);
+    });
+}
+
+function renderUsersList() {
+    const list = document.getElementById('grantedAdminsList');
+    if (!list) return;
+
+    if (adminUsers.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No additional admins granted yet.</p>';
+        return;
+    }
+
+    list.innerHTML = adminUsers.map(u => `
+        <div class="testimonial-row">
+            <div class="testimonial-row-content">
+                <div class="testimonial-row-avatar" style="background:linear-gradient(135deg,#10b981,#059669)">${(u.email || 'A')[0].toUpperCase()}</div>
+                <div class="testimonial-row-info">
+                    <h4>${escapeHTML(u.displayName || u.email)}</h4>
+                    <p class="testimonial-row-role">${escapeHTML(u.email)}</p>
+                    <p class="testimonial-row-role" style="color:#10b981"><i class="fas fa-check-circle"></i> Admin access granted</p>
+                </div>
+            </div>
+            <div class="testimonial-row-actions">
+                <button class="action-btn delete-btn" onclick="revokeAdmin('${u.id}','${escapeHTML(u.email)}')" title="Revoke Access">
+                    <i class="fas fa-user-slash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderPendingUsers(pending) {
+    const list = document.getElementById('pendingUsersList');
+    if (!list) return;
+    const countEl = document.getElementById('pendingCount');
+    if (countEl) countEl.textContent = pending.length;
+
+    if (pending.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No pending access requests.</p>';
+        return;
+    }
+
+    list.innerHTML = pending.map(u => `
+        <div class="testimonial-row">
+            <div class="testimonial-row-content">
+                <div class="testimonial-row-avatar" style="background:linear-gradient(135deg,#f59e0b,#d97706)">${(u.email || 'A')[0].toUpperCase()}</div>
+                <div class="testimonial-row-info">
+                    <h4>${escapeHTML(u.displayName || 'Unknown')}</h4>
+                    <p class="testimonial-row-role">${escapeHTML(u.email)}</p>
+                    <p class="testimonial-row-role" style="color:#f59e0b"><i class="fas fa-clock"></i> Pending access</p>
+                </div>
+            </div>
+            <div class="testimonial-row-actions">
+                <button class="action-btn edit-btn" onclick="grantAdmin('${u.id}','${escapeHTML(u.email)}','${escapeHTML(u.displayName || '')}')" title="Grant Access" style="border-color:#10b981;color:#10b981">
+                    <i class="fas fa-user-check"></i>
+                </button>
+                <button class="action-btn delete-btn" onclick="removePending('${u.id}')" title="Reject">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function grantAdmin(uid, email, displayName) {
+    try {
+        await db.collection('admins').doc(uid).set({
+            uid: uid,
+            email: email,
+            displayName: displayName,
+            grantedBy: auth.currentUser.email,
+            grantedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        // Remove from pending
+        await db.collection('pendingUsers').doc(uid).delete();
+        showToast('Admin access granted to ' + email, 'success');
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function revokeAdmin(uid, email) {
+    if (!confirm('Revoke admin access for ' + email + '?')) return;
+    try {
+        await db.collection('admins').doc(uid).delete();
+        showToast('Admin access revoked for ' + email, 'success');
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function removePending(uid) {
+    try {
+        await db.collection('pendingUsers').doc(uid).delete();
+        showToast('Pending user removed', 'success');
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function searchAndGrantByEmail() {
+    const input = document.getElementById('grantEmailInput');
+    const email = input.value.trim().toLowerCase();
+    if (!email) { showToast('Enter an email address', 'error'); return; }
+
+    // Search in pending users by email
+    try {
+        const snapshot = await db.collection('pendingUsers').where('email', '==', email).get();
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            const data = doc.data();
+            await grantAdmin(doc.id, data.email, data.displayName || '');
+            input.value = '';
+        } else {
+            showToast('No pending user found with that email. They need to sign in first on the admin page.', 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
 }
 
 // ===== INITIALIZATION =====

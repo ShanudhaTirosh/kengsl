@@ -213,6 +213,7 @@
             <div class="tab-bar">
                 <button class="admin-tab active" data-tab="portfolio" onclick="switchTab('portfolio')"><i class="fas fa-images"></i>&nbsp; Portfolio</button>
                 <button class="admin-tab" data-tab="testimonials" onclick="switchTab('testimonials')"><i class="fas fa-quote-right"></i>&nbsp; Testimonials</button>
+                <button class="admin-tab" data-tab="users" onclick="switchTab('users')" style="display:none;"><i class="fas fa-users"></i>&nbsp; Users</button>
             </div>
 
             <!-- Portfolio Content -->
@@ -234,6 +235,31 @@
                 </div>
                 <div class="testimonial-list" id="adminTestimonialsList">
                     <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Loading...</h3></div>
+                </div>
+            </div>
+
+            <!-- Users Content (Primary Admin Only) -->
+            <div id="usersContent" style="display:none">
+                <div class="section-bar">
+                    <h2 style="font-size:1.3rem">User Management</h2>
+                    <div style="display:flex;gap:10px;">
+                        <input type="email" id="grantEmailInput" class="form-input" placeholder="Search pending email..." style="width:250px;padding:10px 16px;">
+                        <button class="btn btn-primary" style="padding:10px 24px;font-size:.9rem" onclick="searchAndGrantByEmail()"><i class="fas fa-search"></i> Grant Access</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:40px;">
+                    <h3 style="font-size:1.1rem;margin-bottom:16px;color:var(--text-secondary)"><i class="fas fa-clock" style="color:#f59e0b"></i> Pending Requests (<span id="pendingCount">0</span>)</h3>
+                    <div class="testimonial-list" id="pendingUsersList">
+                        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Loading...</h3></div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 style="font-size:1.1rem;margin-bottom:16px;color:var(--text-secondary)"><i class="fas fa-check-circle" style="color:#10b981"></i> Granted Admins</h3>
+                    <div class="testimonial-list" id="grantedAdminsList">
+                        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Loading...</h3></div>
+                    </div>
                 </div>
             </div>
         </div>

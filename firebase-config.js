@@ -45,27 +45,46 @@ const auth = firebase.auth();
 //  service cloud.firestore {
 //    match /databases/{database}/documents {
 //
-//      // Portfolio: public read, admin-only write
+//      function isAdmin() {
+//        return request.auth != null && (
+//          get(/databases/$(database)/documents/settings/admin).data.uid == request.auth.uid ||
+//          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+//        );
+//      }
+//
+//      function isPrimaryAdmin() {
+//        return request.auth != null && 
+//          get(/databases/$(database)/documents/settings/admin).data.uid == request.auth.uid;
+//      }
+//
+//      // Portfolio & Testimonials: public read, any admin write
 //      match /portfolio/{itemId} {
 //        allow read: if true;
-//        allow write: if request.auth != null
-//          && get(/databases/$(database)/documents/settings/admin).data.uid == request.auth.uid;
+//        allow write: if isAdmin();
 //      }
-//
-//      // Testimonials: public read, admin-only write
 //      match /testimonials/{itemId} {
 //        allow read: if true;
-//        allow write: if request.auth != null
-//          && get(/databases/$(database)/documents/settings/admin).data.uid == request.auth.uid;
+//        allow write: if isAdmin();
 //      }
 //
-//      // Settings: admin can read/write, first user can create
+//      // Settings: any admin can read, first user can create, primary can update
 //      match /settings/admin {
-//        allow read: if request.auth != null;
-//        allow create: if request.auth != null
-//          && !exists(/databases/$(database)/documents/settings/admin);
-//        allow update, delete: if request.auth != null
-//          && resource.data.uid == request.auth.uid;
+//        allow read: if isAdmin();
+//        allow create: if request.auth != null && !exists(/databases/$(database)/documents/settings/admin);
+//        allow update, delete: if isPrimaryAdmin();
+//      }
+//
+//      // Granted Admins: primary admin controls
+//      match /admins/{uid} {
+//        allow read: if isPrimaryAdmin() || request.auth.uid == uid;
+//        allow write: if isPrimaryAdmin();
+//      }
+//
+//      // Pending Users: users can create their own request, primary admin can read/delete
+//      match /pendingUsers/{uid} {
+//        allow read: if isPrimaryAdmin();
+//        allow create: if request.auth != null && request.auth.uid == uid;
+//        allow update, delete: if isPrimaryAdmin() || request.auth.uid == uid;
 //      }
 //    }
 //  }
