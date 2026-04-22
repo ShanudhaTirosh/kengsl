@@ -1,7 +1,6 @@
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUKca-fK-EsVZ08iJTAF5y7FtgAepc-S2HYRb6lBvwyxota4hGa-YXSdTNQ9M8Km_X4EVXjuPEHCr1/pub?output=csv";
-
-// ===== Portfolio Data Cache =====
+// ===== Portfolio & Testimonials Data Cache =====
 let portfolioCache = null;
+let testimonialsCache = null;
 
 // ===== Mobile Menu Toggle =====
 function toggleMenu() {
@@ -9,50 +8,6 @@ function toggleMenu() {
     if (navLinks) {
         navLinks.classList.toggle('active');
     }
-}
-
-// ===== Proper CSV Parser (handles quoted fields with commas) =====
-function parseCSV(text) {
-    const rows = [];
-    let current = '';
-    let inQuotes = false;
-    const chars = text.trim();
-
-    const currentRow = [];
-    for (let i = 0; i < chars.length; i++) {
-        const ch = chars[i];
-        if (inQuotes) {
-            if (ch === '"' && chars[i + 1] === '"') {
-                current += '"';
-                i++;
-            } else if (ch === '"') {
-                inQuotes = false;
-            } else {
-                current += ch;
-            }
-        } else {
-            if (ch === '"') {
-                inQuotes = true;
-            } else if (ch === ',') {
-                currentRow.push(current.trim());
-                current = '';
-            } else if (ch === '\n' || (ch === '\r' && chars[i + 1] === '\n')) {
-                currentRow.push(current.trim());
-                rows.push([...currentRow]);
-                currentRow.length = 0;
-                current = '';
-                if (ch === '\r') i++;
-            } else {
-                current += ch;
-            }
-        }
-    }
-    // Push last field / row
-    if (current || currentRow.length > 0) {
-        currentRow.push(current.trim());
-        rows.push(currentRow);
-    }
-    return rows;
 }
 
 // ===== XSS Sanitization =====
@@ -63,35 +18,40 @@ function escapeHTML(str) {
     return div.innerHTML;
 }
 
-// ===== Google Sheets Fetching Logic =====
+// ===== Firestore Fetching Logic =====
 async function fetchPortfolio() {
-    // Return cache if available
     if (portfolioCache) return portfolioCache;
 
     try {
-        const response = await fetch(GOOGLE_SHEET_URL);
-        const csvText = await response.text();
-        const rows = parseCSV(csvText);
-
-        if (rows.length === 0) return [];
-
-        const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim());
+        const snapshot = await db.collection('portfolio').orderBy('order', 'asc').get();
         const items = [];
-
-        for (let i = 1; i < rows.length; i++) {
-            const values = rows[i];
-            const item = {};
-            headers.forEach((header, index) => {
-                item[header] = values[index] ? values[index].replace(/^"|"$/g, '').trim() : '';
-            });
-            if (item.title && item.image) {
-                items.push(item);
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.title && data.image) {
+                items.push({ id: doc.id, ...data });
             }
-        }
+        });
         portfolioCache = items;
         return items;
     } catch (error) {
-        console.error('Error loading portfolio:', error);
+        console.error('Error loading portfolio from Firestore:', error);
+        return [];
+    }
+}
+
+async function fetchTestimonials() {
+    if (testimonialsCache) return testimonialsCache;
+
+    try {
+        const snapshot = await db.collection('testimonials').orderBy('order', 'asc').get();
+        const items = [];
+        snapshot.forEach(doc => {
+            items.push({ id: doc.id, ...doc.data() });
+        });
+        testimonialsCache = items;
+        return items;
+    } catch (error) {
+        console.error('Error loading testimonials from Firestore:', error);
         return [];
     }
 }
@@ -172,6 +132,31 @@ async function renderPortfolio(filter = 'all') {
     `).join('');
 
     // Re-observe new elements for scroll animation
+    grid.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+}
+
+// ===== Render Testimonials from Firestore =====
+async function renderTestimonials() {
+    const grid = document.querySelector('.testimonials-grid');
+    if (!grid) return;
+
+    const items = await fetchTestimonials();
+    if (items.length === 0) return; // Keep hardcoded fallback if no Firestore data
+
+    grid.innerHTML = items.map((item, i) => `
+        <div class="glass-panel testi-card animate-on-scroll delay-${(i % 3) + 1}">
+            <div class="testi-stars">${'<i class="fas fa-star"></i>'.repeat(item.rating || 5)}</div>
+            <p class="testi-quote">"${escapeHTML(item.quote)}"</p>
+            <div class="testi-author">
+                <div class="author-avatar">${escapeHTML((item.authorName || 'A')[0])}</div>
+                <div class="author-info">
+                    <h4>${escapeHTML(item.authorName)}</h4>
+                    <p>${escapeHTML(item.authorRole || '')}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
     grid.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
 }
 
@@ -368,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize all features
     renderFeatured();
     renderPortfolio();
+    renderTestimonials();
     setupFilters();
     initLightbox();
     animateCounters();

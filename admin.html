@@ -6,166 +6,352 @@
     <link rel="icon" type="image/png" href="assets/Ken-G_Logo.png">
     <title>Admin - KenGSL Portfolio</title>
     <meta name="robots" content="noindex, nofollow">
-    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
     <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
-        .admin-card {
-            max-width: 900px;
-            width: 100%;
-            padding: 50px;
-        }
-        .step-box {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-md);
-            padding: 30px;
-            margin-bottom: 30px;
-            transition: border-color 0.3s ease;
-        }
-        .step-box:hover {
-            border-color: var(--border-hover);
-        }
-        .step-box h2 {
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .step-box h2 i {
-            color: var(--accent-1);
-        }
-        .step-box ol {
-            margin-left: 20px;
-            color: var(--text-secondary);
-        }
-        .step-box li {
-            margin-bottom: 12px;
-        }
-        code, .code-block {
-            background: var(--bg-main);
-            padding: 15px;
-            border-radius: var(--border-radius-sm);
-            font-family: monospace;
-            color: var(--accent-2);
-            display: block;
-            margin: 15px 0;
-            border: 1px solid var(--border-color);
-            overflow-x: auto;
-            font-size: 0.9rem;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 0.9rem;
-        }
-        th, td {
-            text-align: left;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-        }
-        th {
-            background: rgba(255,255,255,0.05);
-            color: var(--text-primary);
-        }
-        .success-box {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid #10b981;
-            color: #10b981;
-            padding: 20px;
-            border-radius: var(--border-radius-sm);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        @media (max-width: 768px) {
-            .admin-card { padding: 30px 20px; }
-            table { display: block; overflow-x: auto; white-space: nowrap; }
+        body{display:flex;flex-direction:column;min-height:100vh;padding:0}
+
+        /* Loading */
+        #loadingScreen{display:flex;align-items:center;justify-content:center;min-height:100vh}
+        .loader{width:48px;height:48px;border:4px solid var(--border-color);border-top-color:var(--accent-1);border-radius:50%;animation:spin .8s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* Login */
+        #loginScreen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+        .login-card{max-width:460px;width:100%;padding:50px;text-align:center}
+        .login-card h1{font-size:2rem;margin-bottom:10px}
+        .login-card p{color:var(--text-secondary);margin-bottom:35px}
+        .google-btn{display:inline-flex;align-items:center;gap:12px;padding:14px 36px;background:#fff;color:#333;border:none;border-radius:50px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s ease;font-family:'Outfit',sans-serif;margin:0 auto}
+        .google-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(255,255,255,.15)}
+        .google-btn svg{width:22px;height:22px}
+
+        /* Access Denied */
+        #accessDenied{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center}
+        #accessDenied i{font-size:3rem;color:#ef4444;margin-bottom:20px}
+        #accessDenied h2{margin-bottom:10px}
+        #accessDenied p{color:var(--text-secondary);margin-bottom:30px}
+
+        /* Dashboard */
+        #dashboard{display:none}
+        .admin-header{display:flex;justify-content:space-between;align-items:center;padding:16px 30px;background:var(--bg-surface);border-bottom:1px solid var(--border-color);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:12px}
+        .admin-header-left{display:flex;align-items:center;gap:16px}
+        .admin-header-right{display:flex;align-items:center;gap:16px}
+        .admin-avatar{width:36px;height:36px;border-radius:50%;border:2px solid var(--accent-1)}
+        .admin-email{color:var(--text-secondary);font-size:.85rem}
+        .admin-main{max-width:1280px;margin:0 auto;padding:30px 24px}
+
+        /* Stats */
+        .admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:30px}
+        .stat-card{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--border-radius-md);padding:24px;text-align:center;transition:var(--transition-smooth)}
+        .stat-card:hover{border-color:var(--border-hover);transform:translateY(-2px)}
+        .stat-value{font-size:2.2rem;font-weight:700;font-family:'Outfit',sans-serif;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .stat-label{color:var(--text-secondary);font-size:.85rem;margin-top:4px}
+
+        /* Tabs */
+        .tab-bar{display:flex;gap:4px;margin-bottom:30px;background:var(--bg-surface-solid);padding:4px;border-radius:50px;border:1px solid var(--border-color);width:fit-content}
+        .admin-tab{padding:10px 28px;border-radius:50px;border:none;background:0 0;color:var(--text-secondary);font-weight:600;cursor:pointer;transition:all .3s ease;font-family:'Outfit',sans-serif;font-size:.95rem}
+        .admin-tab.active{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#fff}
+        .admin-tab:hover:not(.active){color:var(--text-primary)}
+
+        /* Section header */
+        .section-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+
+        /* Portfolio Grid */
+        .admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+        .admin-card{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--border-radius-md);overflow:hidden;transition:var(--transition-smooth)}
+        .admin-card:hover{border-color:var(--border-hover);transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.3)}
+        .admin-card-img{position:relative;width:100%;aspect-ratio:16/10;overflow:hidden}
+        .admin-card-img img{width:100%;height:100%;object-fit:cover}
+        .admin-card-badge{position:absolute;top:12px;left:12px;padding:4px 12px;background:rgba(139,92,246,.85);border-radius:50px;font-size:.75rem;font-weight:600;color:#fff;backdrop-filter:blur(8px)}
+        .admin-card-body{padding:16px}
+        .admin-card-body h3{font-size:1.1rem;margin-bottom:6px}
+        .admin-card-body p{color:var(--text-secondary);font-size:.85rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .admin-card-actions{display:flex;gap:8px;padding:0 16px 16px}
+
+        /* Testimonial rows */
+        .testimonial-list{display:flex;flex-direction:column;gap:12px}
+        .testimonial-row{display:flex;justify-content:space-between;align-items:center;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--border-radius-md);padding:20px;transition:var(--transition-smooth);gap:16px}
+        .testimonial-row:hover{border-color:var(--border-hover)}
+        .testimonial-row-content{display:flex;gap:16px;align-items:flex-start;flex:1;min-width:0}
+        .testimonial-row-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Outfit',sans-serif;flex-shrink:0}
+        .testimonial-row-info{min-width:0}
+        .testimonial-row-info h4{font-size:1rem;margin-bottom:2px}
+        .testimonial-row-role{color:var(--text-muted);font-size:.8rem;margin-bottom:6px}
+        .testimonial-row-quote{color:var(--text-secondary);font-size:.9rem;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:500px}
+        .testimonial-row-stars{color:#fbbf24;font-size:.8rem;margin-top:4px}
+        .testimonial-row-actions{display:flex;gap:8px;flex-shrink:0}
+
+        /* Action buttons */
+        .action-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border-color);background:var(--bg-surface-solid);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease;font-size:.85rem}
+        .edit-btn:hover{border-color:var(--accent-1);color:var(--accent-1);background:rgba(139,92,246,.1)}
+        .delete-btn:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.1)}
+
+        /* Empty state */
+        .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);grid-column:1/-1}
+        .empty-state i{font-size:3rem;margin-bottom:16px;opacity:.4}
+        .empty-state h3{color:var(--text-secondary);margin-bottom:8px}
+
+        /* Modals */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:2000;opacity:0;pointer-events:none;transition:opacity .3s ease;padding:20px}
+        .modal-overlay.active{opacity:1;pointer-events:auto}
+        .modal-box{background:var(--bg-surface-solid);border:1px solid var(--border-color);border-radius:var(--border-radius-lg);width:100%;max-width:650px;max-height:90vh;overflow-y:auto;padding:36px;transform:scale(.95);transition:transform .3s ease}
+        .modal-overlay.active .modal-box{transform:scale(1)}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+        .modal-header h2{font-size:1.4rem}
+        .modal-close-btn{background:0 0;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:4px}
+        .modal-close-btn:hover{color:var(--text-primary)}
+
+        /* Upload area */
+        .upload-zone{border:2px dashed var(--border-color);border-radius:var(--border-radius-md);padding:30px;text-align:center;cursor:pointer;transition:all .3s ease;margin-bottom:16px}
+        .upload-zone:hover,.upload-zone.dragover{border-color:var(--accent-1);background:rgba(139,92,246,.05)}
+        .upload-zone i{font-size:2rem;color:var(--text-muted);margin-bottom:10px}
+        .upload-zone p{color:var(--text-secondary);font-size:.9rem}
+        .image-preview{width:100%;max-height:250px;object-fit:contain;border-radius:var(--border-radius-sm);margin-top:12px}
+        .compress-loading{padding:30px;text-align:center;color:var(--accent-1);font-size:1.1rem}
+
+        /* Compression info */
+        .compression-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:var(--border-radius-sm);font-size:.85rem;color:#10b981;margin-bottom:16px}
+        .compression-bar i{font-size:1rem}
+        .compression-bar .sep{color:var(--text-muted)}
+
+        /* Quality slider */
+        .quality-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+        .quality-row label{color:var(--text-secondary);font-size:.85rem;white-space:nowrap}
+        .quality-slider{flex:1;appearance:none;height:6px;border-radius:3px;background:var(--bg-main);outline:0}
+        .quality-slider::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));cursor:pointer}
+        .quality-val{color:var(--accent-1);font-weight:600;font-size:.85rem;min-width:32px}
+
+        /* Delete modal */
+        .delete-modal-content{text-align:center;padding:10px 0}
+        .delete-modal-content i{font-size:3rem;color:#ef4444;margin-bottom:16px}
+        .delete-modal-content h3{margin-bottom:8px}
+        .delete-modal-content p{color:var(--text-secondary);margin-bottom:28px}
+        .delete-modal-btns{display:flex;gap:12px;justify-content:center}
+        .btn-danger{background:#ef4444;color:#fff;border:none;padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s ease;display:inline-flex;align-items:center;gap:8px}
+        .btn-danger:hover{background:#dc2626;transform:translateY(-2px)}
+        .btn-cancel{background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border-color);padding:12px 28px;border-radius:50px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s ease}
+        .btn-cancel:hover{border-color:var(--border-hover)}
+
+        /* Toast */
+        #toastContainer{position:fixed;bottom:24px;right:24px;z-index:3000;display:flex;flex-direction:column;gap:8px}
+        .toast{padding:14px 20px;border-radius:var(--border-radius-sm);color:#fff;font-weight:500;display:flex;align-items:center;gap:10px;animation:slideIn .3s ease;min-width:280px;font-size:.9rem}
+        .toast-success{background:rgba(16,185,129,.92);border:1px solid #10b981}
+        .toast-error{background:rgba(239,68,68,.92);border:1px solid #ef4444}
+        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes slideOutRight{to{transform:translateX(100%);opacity:0}}
+
+        /* Form extras */
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .form-label{display:block;color:var(--text-secondary);font-size:.85rem;margin-bottom:6px;font-weight:500}
+
+        @media(max-width:768px){
+            .admin-header{padding:12px 16px}
+            .admin-main{padding:20px 16px}
+            .admin-grid{grid-template-columns:1fr}
+            .form-row{grid-template-columns:1fr}
+            .testimonial-row{flex-direction:column;align-items:flex-start}
+            .testimonial-row-quote{max-width:100%}
+            .tab-bar{width:100%}
+            .admin-tab{flex:1;text-align:center;padding:10px 12px;font-size:.85rem}
+            .admin-email{display:none}
         }
     </style>
 </head>
 <body>
 
-    <div class="glass-panel admin-card fade-in-up">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; flex-wrap: wrap; gap: 20px;">
-            <h1 class="section-title" style="margin: 0;"><i class="fas fa-database text-gradient"></i> Admin Panel</h1>
-            <a href="index.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Website</a>
+    <!-- Loading -->
+    <div id="loadingScreen"><div class="loader"></div></div>
+
+    <!-- Login -->
+    <div id="loginScreen">
+        <div class="glass-panel login-card fade-in-up">
+            <div style="margin-bottom:24px"><span class="nav-brand" style="font-size:2rem">Ken<span>G</span>SL</span></div>
+            <h1>Admin Dashboard</h1>
+            <p>Sign in with your Google account to manage your portfolio</p>
+            <button class="google-btn" onclick="signInWithGoogle()">
+                <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+            </button>
         </div>
+    </div>
 
-        <p style="color: var(--text-secondary); margin-bottom: 40px; font-size: 1.1rem;">
-            Manage your portfolio items using Google Sheets. Because this portfolio is integrated dynamically, 
-            any changes you make to the sheet will automatically and instantly appear on your website!
-        </p>
-
-        <div class="step-box">
-            <h2><i class="fas fa-table"></i> Step 1: Create or Edit Your Google Sheet</h2>
-            <ol>
-                <li>Go to <a href="https://sheets.new/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-1); text-decoration: underline;">sheets.new</a></li>
-                <li>Ensure you have these EXACT column headers in Row 1:</li>
-            </ol>
-            <table>
-                <thead>
-                    <tr><th>id</th><th>title</th><th>category</th><th>categoryDisplay</th><th>description</th><th>result</th><th>image</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>1</td><td>Gaming Stream</td><td>thumbnail</td><td>YouTube Thumbnail</td><td>High-impact gaming...</td><td>40% CTR</td><td>https://example.com/img.png</td></tr>
-                </tbody>
-            </table>
+    <!-- Access Denied -->
+    <div id="accessDenied">
+        <div class="glass-panel login-card fade-in-up">
+            <i class="fas fa-shield-alt"></i>
+            <h2>Access Denied</h2>
+            <p>This account is not authorized as admin. Only the first registered Google account has access.</p>
+            <button class="btn btn-secondary" onclick="signOutUser()">Sign Out</button>
         </div>
+    </div>
 
-        <div class="step-box">
-            <h2><i class="fas fa-globe"></i> Step 2: Publish Your Sheet</h2>
-            <ol>
-                <li>In Google Sheets, click <strong>File → Share → Publish to web</strong></li>
-                <li>Under "Link", select: <strong>Entire Document</strong> and <strong>Comma-separated values (.csv)</strong></li>
-                <li>Click <strong>Publish</strong> and copy the generated link. It will look like this:</li>
-            </ol>
-            <div class="code-block">https://docs.google.com/spreadsheets/d/e/2PACX-1vXXXXX/pub?output=csv</div>
-        </div>
-
-        <div class="step-box">
-            <h2><i class="fas fa-code"></i> Step 3: Update script.js</h2>
-            <ol>
-                <li>If you ever create a NEW sheet, quickly open <strong>script.js</strong> on your website codebase.</li>
-                <li>Replace the <code>GOOGLE_SHEET_URL</code> constant variable at the very top.</li>
-                <li>Deploy to Netlify and you're good to go!</li>
-            </ol>
-        </div>
-
-        <div class="success-box">
-            <i class="fas fa-check-circle" style="font-size: 1.5rem;"></i>
-            <div>
-                <strong>You're all set!</strong> As long as your sheet is published and columns match, everything is synced automatically. 
-                <br><span style="font-size: 0.9rem; opacity: 0.8;">Note: The category column should strictly be 'thumbnail', 'promotion', or 'social' to match the gallery filters.</span>
+    <!-- Dashboard -->
+    <div id="dashboard">
+        <div class="admin-header">
+            <div class="admin-header-left">
+                <a href="index.html" class="nav-brand">Ken<span>G</span>SL</a>
+                <span style="color:var(--text-muted);font-size:.85rem">Admin</span>
+            </div>
+            <div class="admin-header-right">
+                <span class="admin-email" id="adminEmail"></span>
+                <img class="admin-avatar" id="adminAvatar" src="" alt="Admin" onerror="this.style.display='none'">
+                <a href="index.html" class="btn btn-secondary" style="padding:8px 18px;font-size:.85rem"><i class="fas fa-external-link-alt"></i> Site</a>
+                <button class="btn btn-secondary" style="padding:8px 18px;font-size:.85rem" onclick="signOutUser()"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
         </div>
 
-        <div style="text-align: center; margin-top: 40px;">
-            <a href="portfolio.html" class="btn btn-primary" style="margin-right: 15px;"><i class="fas fa-images"></i> View Gallery</a>
-            <a href="https://docs.google.com/spreadsheets/u/0/" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"><i class="fas fa-external-link-alt"></i> Open Google Sheets</a>
-        </div>
+        <div class="admin-main">
+            <!-- Stats -->
+            <div class="admin-stats">
+                <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Portfolio Items</div></div>
+                <div class="stat-card"><div class="stat-value" id="statThumbnails">0</div><div class="stat-label">Thumbnails</div></div>
+                <div class="stat-card"><div class="stat-value" id="statPromo">0</div><div class="stat-label">Promo / Social</div></div>
+                <div class="stat-card"><div class="stat-value" id="statTestimonials">0</div><div class="stat-label">Testimonials</div></div>
+            </div>
 
+            <!-- Tabs -->
+            <div class="tab-bar">
+                <button class="admin-tab active" data-tab="portfolio" onclick="switchTab('portfolio')"><i class="fas fa-images"></i>&nbsp; Portfolio</button>
+                <button class="admin-tab" data-tab="testimonials" onclick="switchTab('testimonials')"><i class="fas fa-quote-right"></i>&nbsp; Testimonials</button>
+            </div>
+
+            <!-- Portfolio Content -->
+            <div id="portfolioContent">
+                <div class="section-bar">
+                    <h2 style="font-size:1.3rem">Portfolio Items</h2>
+                    <button class="btn btn-primary" style="padding:10px 24px;font-size:.9rem" onclick="openAddPortfolio()"><i class="fas fa-plus"></i> Add Item</button>
+                </div>
+                <div class="admin-grid" id="adminPortfolioGrid">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Loading...</h3></div>
+                </div>
+            </div>
+
+            <!-- Testimonials Content -->
+            <div id="testimonialsContent" style="display:none">
+                <div class="section-bar">
+                    <h2 style="font-size:1.3rem">Testimonials</h2>
+                    <button class="btn btn-primary" style="padding:10px 24px;font-size:.9rem" onclick="openAddTestimonial()"><i class="fas fa-plus"></i> Add Testimonial</button>
+                </div>
+                <div class="testimonial-list" id="adminTestimonialsList">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Loading...</h3></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Inline toggleMenu for admin page (no script.js dependency needed) -->
-    <script>
-        function toggleMenu() {
-            const navLinks = document.getElementById('navLinks');
-            if (navLinks) navLinks.classList.toggle('active');
-        }
-    </script>
+    <!-- Portfolio Modal -->
+    <div class="modal-overlay" id="portfolioModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="portfolioModalTitle">Add Portfolio Item</h2>
+                <button class="modal-close-btn" onclick="closeModal('portfolioModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="portfolioForm" onsubmit="savePortfolioItem(event)">
+                <div class="form-group"><label class="form-label">Title *</label><input type="text" name="pTitle" class="form-input" placeholder="e.g. Gaming Stream Thumbnail" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Category *</label>
+                        <select name="pCategory" class="form-input" required>
+                            <option value="thumbnail">Thumbnail</option>
+                            <option value="promotion">Promotion</option>
+                            <option value="social">Social Media</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Display Name</label><input type="text" name="pCategoryDisplay" class="form-input" placeholder="e.g. YouTube Thumbnail"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Description</label><textarea name="pDescription" class="form-input" placeholder="Brief description..." style="min-height:80px"></textarea></div>
+                <div class="form-group"><label class="form-label">Result / Stat</label><input type="text" name="pResult" class="form-input" placeholder="e.g. 40% CTR increase"></div>
+
+                <!-- Image Upload -->
+                <div class="form-group">
+                    <label class="form-label">Image *</label>
+                    <div class="upload-zone" id="uploadDropZone" onclick="document.getElementById('imageInput').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click or drag & drop an image</p>
+                        <p style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Auto-compressed to WebP</p>
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+                    <div class="quality-row">
+                        <label>Quality:</label>
+                        <input type="range" class="quality-slider" id="qualitySlider" min="0.3" max="0.95" step="0.05" value="0.75" oninput="document.getElementById('qualityVal').textContent=Math.round(this.value*100)+'%'">
+                        <span class="quality-val" id="qualityVal">75%</span>
+                        <button type="button" class="action-btn edit-btn" onclick="recompressImage()" title="Re-compress" style="width:32px;height:32px"><i class="fas fa-sync-alt" style="font-size:.75rem"></i></button>
+                    </div>
+                    <div class="compression-bar" id="compressionInfo" style="display:none">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong id="originalSize">-</strong> → <strong id="compressedSize">-</strong></span>
+                        <span class="sep">|</span>
+                        <span id="compressionFormat">WebP</span>
+                        <span class="sep">|</span>
+                        <span id="compressionSavings">-</span>
+                    </div>
+                    <div id="imagePreviewArea"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%"><i class="fas fa-save"></i> Save Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Testimonial Modal -->
+    <div class="modal-overlay" id="testimonialModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="testimonialModalTitle">Add Testimonial</h2>
+                <button class="modal-close-btn" onclick="closeModal('testimonialModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="testimonialForm" onsubmit="saveTestimonial(event)">
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Client Name *</label><input type="text" name="tAuthorName" class="form-input" placeholder="e.g. BEASTSLK GAMING" required></div>
+                    <div class="form-group"><label class="form-label">Role / Info</label><input type="text" name="tAuthorRole" class="form-input" placeholder="e.g. Gaming Streamer, 150K+ subs"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Testimonial Quote *</label><textarea name="tQuote" class="form-input" placeholder="What did the client say..." required style="min-height:100px"></textarea></div>
+                <div class="form-group"><label class="form-label">Rating (1-5)</label>
+                    <select name="tRating" class="form-input">
+                        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4)</option>
+                        <option value="3">⭐⭐⭐ (3)</option>
+                        <option value="2">⭐⭐ (2)</option>
+                        <option value="1">⭐ (1)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%"><i class="fas fa-save"></i> Save Testimonial</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-box" style="max-width:420px">
+            <div class="delete-modal-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Confirm Delete</h3>
+                <p>This action cannot be undone. Are you sure?</p>
+                <div class="delete-modal-btns">
+                    <button class="btn-cancel" onclick="closeModal('deleteModal')">Cancel</button>
+                    <button class="btn-danger" onclick="executeDelete()"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+ <footer>
+        <div class="container">
+            <div class="footer-brand">Ken<span style="color:var(--accent-1)">G</span>SL</div>
+            <div class="footer-links">
+                <a href="index.html">Home</a>
+                <a href="portfolio.html">Gallery</a>
+                <a href="#contact">Contact</a>
+            </div>
+             <p class="footer-copy">© 2026 Anuhas Nethsara (KenGSL). All rights reserved. | Sri Lanka </br> Design and Develop by <a href="https://shanudhatirosh.github.io/" target="_blank" style="text-decoration: none; color: #0d9488">Shanudha Tirosh</a></p>
+        </div>
+    </footer>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>One-Time Migration</title>
+    <style>
+        body { font-family: monospace; background: #111; color: #0f0; padding: 40px; }
+        #log { white-space: pre-wrap; line-height: 1.8; }
+        button { padding: 14px 32px; font-size: 1.1rem; cursor: pointer; background: #8b5cf6; color: #fff; border: none; border-radius: 8px; margin-bottom: 20px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .err { color: #ef4444; }
+        .ok { color: #10b981; }
+    </style>
+</head>
+<body>
+    <h1>📦 CSV → Firestore Migration</h1>
+    <p>This will import 18 portfolio items from your Google Sheet CSV into Firestore.</p>
+    <p><strong>You must be signed in as admin first (open admin.html and login).</strong></p>
+    <button id="runBtn" onclick="runMigration()">🚀 Run Migration</button>
+    <div id="log"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        const logEl = document.getElementById('log');
+        function log(msg, cls) {
+            const span = document.createElement('span');
+            span.className = cls || '';
+            span.textContent = msg + '\n';
+            logEl.appendChild(span);
+        }
+
+        const csvData = [
+            { id: 1, title: "Gaming Stream Thumbnail", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "High-impact gaming thumbnail with bold typography", result: "40% CTR Increase", image: "https://i.ibb.co/3myqjsh4/Thumbnail-9.png" },
+            { id: 2, title: "Explore Ceylon Paradise", category: "promotion", categoryDisplay: "Promotional Design", description: "Travel promotion campaign highlighting Sri Lanka", result: "55% Engagement", image: "https://i.ibb.co/NnnzvCb9/We-Are-Ready.png" },
+            { id: 3, title: "Cooking Show Thumbnail", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Appetizing thumbnail design for cooking channel", result: "Views doubled", image: "https://i.ibb.co/bgLxY70j/One-Armed-Cook-Thumb-1.png" },
+            { id: 4, title: "Tomb Raider", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created For My Own", result: "Hyped My Live", image: "https://i.ibb.co/Rp4944Hk/Tomb-Raider-Thumbnail-2.png" },
+            { id: 5, title: "Tomb Raider", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created For My Own", result: "Hyped My Live", image: "https://i.ibb.co/KcVb5CVn/Tomb-Raider-Thumbnail-1.png" },
+            { id: 6, title: "The Forest", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created For My Own", result: "Hyped My Live", image: "https://i.ibb.co/DHFgzYkf/Forest-Thumbnail-Apex.png" },
+            { id: 7, title: "FiveM Live Stream", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created For Mr TL", result: "Hyped the Stream", image: "https://i.ibb.co/8Lb0wWZp/Thumbnail-1.png" },
+            { id: 8, title: "Red Dead Redemption", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created For RanDineX", result: "Hyped The Stream", image: "https://i.ibb.co/YqHNtkK/Thumbnail-7-1.png" },
+            { id: 9, title: "Graphic Designer Post", category: "social", categoryDisplay: "Social Media", description: "Created For My Own", result: "Promotional", image: "https://i.ibb.co/WWFt8Xs3/Ken-G-Graphic-X-Post.png" },
+            { id: 10, title: "Food Promotional", category: "social", categoryDisplay: "Social Media", description: "Created As a Sample", result: "Promotional", image: "https://i.ibb.co/QvGdZHww/Ramen-Promotion.png" },
+            { id: 11, title: "FiveM Live Stream", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created Towards RanDineX", result: "Hyped", image: "https://i.ibb.co/GfmtSybk/Thumbnail-3.png" },
+            { id: 12, title: "MTA:SA Live Stream", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created For My Own", result: "Hyped", image: "https://i.ibb.co/Dff5ZVzS/Thumbnail-5.jpg" },
+            { id: 13, title: "Apex Computers PC Builds", category: "social", categoryDisplay: "Social Media", description: "Created For A PC Shop", result: "Promotional", image: "https://i.ibb.co/60M2hkFD/Apex-I5-3-TH-PC-Build.png" },
+            { id: 14, title: "Apex Computers PC Builds", category: "social", categoryDisplay: "Social Media", description: "Created For A PC Shop", result: "Promotional", image: "https://i.ibb.co/mw88qpb/Apex-PC-Build.png" },
+            { id: 15, title: "Eliora Clothing Store Offers", category: "social", categoryDisplay: "Social Media", description: "Created for Clothing Store", result: "Promotional", image: "https://i.ibb.co/Q7pLWn29/Eliora-Post-2-with-wm.png" },
+            { id: 16, title: "ShiftLK Netch Solutions Post", category: "social", categoryDisplay: "Social Media", description: "Created For Our ShiftLK Netch Solutions", result: "Promotional", image: "https://i.ibb.co/9mgbDhbb/SLKN-Post.png" },
+            { id: 17, title: "WrapX Networks", category: "social", categoryDisplay: "Social Media", description: "Created Towards WrapX", result: "Promotional", image: "https://i.ibb.co/XfxgLQNW/Canva-Post.png" },
+            { id: 18, title: "FiveM Live Stream", category: "thumbnail", categoryDisplay: "YouTube Thumbnail", description: "Created Towards Some Kolla Streams", result: "Hyped The Stream", image: "https://i.ibb.co/p6gSCdkH/Thumbnail-1.png" }
+        ];
+
+        async function runMigration() {
+            const btn = document.getElementById('runBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Running...';
+
+            // Check auth
+            const user = auth.currentUser;
+            if (!user) {
+                log('❌ Not signed in! Open admin.html first, sign in, then come back here.', 'err');
+                btn.disabled = false;
+                btn.textContent = '🚀 Run Migration';
+                return;
+            }
+            log('✅ Signed in as: ' + user.email, 'ok');
+
+            // Check if portfolio already has data
+            const existing = await db.collection('portfolio').get();
+            if (!existing.empty) {
+                log('⚠️  Portfolio collection already has ' + existing.size + ' items. Skipping to avoid duplicates.', 'err');
+                log('   If you want to re-import, delete all items from Firestore first.', 'err');
+                btn.textContent = '⚠️ Already imported';
+                return;
+            }
+
+            log('Starting import of ' + csvData.length + ' items...\n');
+
+            let success = 0;
+            for (const item of csvData) {
+                try {
+                    await db.collection('portfolio').add({
+                        title: item.title,
+                        category: item.category,
+                        categoryDisplay: item.categoryDisplay,
+                        description: item.description,
+                        result: item.result,
+                        image: item.image,
+                        order: item.id,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    log('  ✅ [' + item.id + '] ' + item.title, 'ok');
+                    success++;
+                } catch (err) {
+                    log('  ❌ [' + item.id + '] ' + item.title + ' — ' + err.message, 'err');
+                }
+            }
+
+            // ===== TESTIMONIALS =====
+            const testimonials = [
+                { authorName: "BEASTSLK GAMING", authorRole: "Gaming Streamer, 150K+ subs", quote: "KenGSL transformed our YouTube channel with amazing thumbnails! Our CTR increased by 40% in just one month.", rating: 5 },
+                { authorName: "Explore Ceylon Paradise", authorRole: "Tour Guide Company", quote: "Professional, creative, and always delivers on time! The branding work exceeded expectations.", rating: 5 },
+                { authorName: "Randy Gaming", authorRole: "Twitch Streamer", quote: "My streams just started hitting hundreds of viewers after uploading these thumbnails!", rating: 5 }
+            ];
+
+            const existingTesti = await db.collection('testimonials').get();
+            if (existingTesti.empty) {
+                log('\nImporting ' + testimonials.length + ' testimonials...\n');
+                let tSuccess = 0;
+                for (let i = 0; i < testimonials.length; i++) {
+                    try {
+                        await db.collection('testimonials').add({
+                            ...testimonials[i],
+                            order: i + 1,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        log('  ✅ ' + testimonials[i].authorName, 'ok');
+                        tSuccess++;
+                    } catch (err) {
+                        log('  ❌ ' + testimonials[i].authorName + ' — ' + err.message, 'err');
+                    }
+                }
+                log('\n✅ Testimonials: ' + tSuccess + '/' + testimonials.length + ' imported.', 'ok');
+            } else {
+                log('\n⚠️ Testimonials already exist (' + existingTesti.size + '). Skipped.', 'err');
+            }
+
+            log('\n========================================');
+            log('🎉 Migration complete! ' + success + '/' + csvData.length + ' portfolio + testimonials imported.', 'ok');
+            log('You can now delete this migrate.html file.', 'ok');
+            btn.textContent = '✅ Done!';
+        }
+    </script>
+</body>
+</html>
