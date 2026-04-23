@@ -478,8 +478,12 @@ async function handleImageUpload(input) {
 
 async function recompressImage() {
     const input = document.getElementById('imageInput');
-    if (input.files[0]) {
+    if (input.files && input.files[0]) {
         await handleImageUpload(input);
+    } else if (currentImageBase64) {
+        showToast('Please upload the original image again to change its quality.', 'error');
+    } else {
+        showToast('Please upload an image first.', 'error');
     }
 }
 

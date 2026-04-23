@@ -298,7 +298,7 @@
                     <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
                     <div class="quality-row">
                         <label>Quality:</label>
-                        <input type="range" class="quality-slider" id="qualitySlider" min="0.3" max="0.95" step="0.05" value="0.75" oninput="document.getElementById('qualityVal').textContent=Math.round(this.value*100)+'%'">
+                        <input type="range" class="quality-slider" id="qualitySlider" min="0.3" max="0.95" step="0.05" value="0.75" oninput="document.getElementById('qualityVal').textContent=Math.round(this.value*100)+'%'" onchange="recompressImage()">
                         <span class="quality-val" id="qualityVal">75%</span>
                         <button type="button" class="action-btn edit-btn" onclick="recompressImage()" title="Re-compress" style="width:32px;height:32px"><i class="fas fa-sync-alt" style="font-size:.75rem"></i></button>
                     </div>
